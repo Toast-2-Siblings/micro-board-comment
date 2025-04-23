@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/Toast-2-Siblings/micro-board-comment/config"
 	"github.com/Toast-2-Siblings/micro-board-comment/server"
 )
 
@@ -16,6 +17,9 @@ func main() {
 	// Initialize the logger
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
+	if _, err := config.LoadConfig(); err != nil {
+		log.Fatalf("Failed to load config: %v\n", err)
+	}
 
 	// Config the Server
 	server := server.NewServer(&server.ServerConfig{

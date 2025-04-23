@@ -5,6 +5,7 @@ go 1.24.2
 require (
 	github.com/gin-gonic/contrib v0.0.0-20250113154928-93b827325fec
 	github.com/gin-gonic/gin v1.10.0
+	github.com/joho/godotenv v1.5.1
 )
 
 require (

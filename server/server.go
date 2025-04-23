@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Toast-2-Siblings/micro-board-comment/config"
 	"github.com/gin-gonic/contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -17,7 +18,7 @@ type ServerConfig struct {
 type Server interface {
 	Init() error
 	Run() error
-	Shutdown(ctx context.Context) error
+	Shutdown(ctx context.Context)
 }
 
 type server struct {
@@ -37,9 +38,18 @@ func NewServer(cfg *ServerConfig, ctx context.Context) Server {
 	}
 }
 
+func (s *server) setConfig() {
+	cfg := config.GetConfig()
+	if cfg.Mode == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	} else {
+		gin.SetMode(gin.DebugMode)
+	}
+}
+
 func (s *server) Init() error {
 	s.router = gin.Default()
-	s.router.Use(gin.Logger())
+	s.setConfig()
 	
 	s.router.Use(cors.New(cors.Config{
 		AllowAllOrigins:  true,
@@ -64,24 +74,22 @@ func (s *server) Init() error {
 
 func (s *server) Run() error {
 	log.Println("Starting server on Port", s.cfg.Port)
-	if err := s.server.ListenAndServe(); err != nil {
+	if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		return err
 	}
 	
 	return nil
 }
 
-func (s *server) Shutdown(ctx context.Context) error {
+func (s *server) Shutdown(ctx context.Context) {
 	log.Println("Shutting down server...")
 
-	shutdownCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
+	shutdownCtx, shutdownCancel := context.WithTimeout(ctx, 5*time.Second)
+	defer shutdownCancel()
 
 	if err := s.server.Shutdown(shutdownCtx); err != nil {
-		log.Println("Server forced to shutdown:", err)
-		return err
+		log.Fatalf("Server forced to shutdown: %v", err)
 	}
 
-	log.Println("Server exiting")
-	return nil
+	log.Println("Server exited properly")
 }
