@@ -9,32 +9,43 @@ import (
 
 	"github.com/Toast-2-Siblings/micro-board-comment/config"
 	"github.com/Toast-2-Siblings/micro-board-comment/database"
+	"github.com/Toast-2-Siblings/micro-board-comment/redis"
 	"github.com/Toast-2-Siblings/micro-board-comment/server"
+	"github.com/Toast-2-Siblings/micro-board-comment/subscriber"
 )
 
 func main() {
 	ctx, cancle := context.WithCancel(context.Background())
 
-	// Initialize the logger
+	// 로거 설정
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	// Load the configuration
+	// env 파일 로드
 	log.Println("Loading configuration...")
 	if _, err := config.LoadConfig(); err != nil {
 		log.Fatalf("Failed to load config: %v\n", err)
 	}
 
-	// Initialize the database
+	// 데이터베이스 설정
 	log.Println("Initializing database...")
 	if err := database.InitDatabase(); err != nil {
 		log.Fatalf("Failed to initialize database: %v\n", err)
 	}
 
-	// Migrate the database
+	// 데이터베이스 마이그레이션
 	log.Println("Initializing database migration...")
 	if err := database.Migrate(); err != nil {
 		log.Fatalf("Failed to migrate database: %v\n", err)
 	}
+
+	// Redis 설정
+	log.Println("Initializing Redis...")
+	if err := redis.InitialRedis(ctx); err != nil {
+		log.Fatalf("Failed to initialize Redis: %v\n", err)
+	}
+
+	// 메시지 브로커 설정
+	subscriber.SubscribeAuthUserCreated(ctx)
 
 	// Config the Server
 	server := server.NewServer(&server.ServerConfig{
