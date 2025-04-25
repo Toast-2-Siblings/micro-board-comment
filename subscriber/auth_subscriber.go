@@ -1,7 +1,6 @@
 package subscriber
 
 import (
-	"fmt"
 	"context"
 	"encoding/json"
 	"log"
@@ -32,17 +31,15 @@ func SubscribeAuthUserCreated(ctx context.Context) {
 		for msg := range ch {
 			var authMessage AuthMessage
 			if err := json.Unmarshal([]byte(msg.Payload), &authMessage); err != nil {
-				log.Println("Error unmarshalling message:", err)
+				log.Println("[Auth-Redis] Error unmarshalling message:", err)
 				continue
 			}
 
-			// # TODO : auth_redis 에서 Method로 저장하게 수정
-			key := fmt.Sprintf("auth_%s", authMessage.ID)
-			err := client.Set(ctx, key, authMessage.Name, 0).Err()
-			if err != nil {
-				log.Println("Redis 저장 오류:", err)
-			} else {
-				log.Printf("[Auth-Redis] 저장됨: %s → %s\n", key, authMessage.Name)
-			}}
+			if err :=  auth_redis.SetAuth(ctx, authMessage.ID, authMessage.Name); err != nil {
+				log.Println("[Auth-Redis] Error setting auth in redis:", err)
+				continue
+			}
+			log.Printf("[Auth-Redis] User created: %s, Name: %s\n", authMessage.ID, authMessage.Name)
+		}
 	}()
 }

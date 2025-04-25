@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"fmt"
 	"context"
 	"errors"
 	"sync"
@@ -12,6 +13,8 @@ import (
 
 type AuthRedis interface {
 	GetClient() *redis.Client
+	Close()
+	SetAuth(ctx context.Context, key string, value string) error
 }
 
 type authRedis struct {
@@ -67,4 +70,19 @@ func (a *authRedis) GetClient() *redis.Client {
 	return a.client
 }
 
+func (a *authRedis) Close() {
+	if a.client != nil {
+		a.client.Close()
+	}
 
+	auth_instance = nil
+}
+
+func (a *authRedis) SetAuth(ctx context.Context, key string, value string) error {
+	auth_key := fmt.Sprintf("auth_%s", key)
+	if err := a.client.Set(ctx, auth_key, value, 0).Err(); err != nil {
+		return err
+	}
+
+	return nil
+}
